@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build -t interactive-lecture/lecture-database .
+docker build -t openservice/lecture-database:latest .
