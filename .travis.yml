@@ -1,0 +1,17 @@
+sudo: required
+
+#language: go
+#go:
+#  - 1.5
+
+services:
+    - docker
+
+script:
+  - ./build.sh
+  - cd testdb && ./build.sh
+    
+after_success:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" -e="$DOCKER_EMAIL"
+  - docker push openservice/lecture-database:latest
+  - docker push openservice/lecture-testdatabase:latest
