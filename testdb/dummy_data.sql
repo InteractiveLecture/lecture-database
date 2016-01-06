@@ -1,3 +1,5 @@
+\c lecture
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 truncate table topics cascade;

@@ -198,19 +198,27 @@ END;
 $$ LANGUAGE plpgsql;
 
 
-
+/**
+* Removes a whole subtree of modules, starting at *in_module_id*. 
+*
+* It checks wether or not the topic of the subtree matches the given context (in_context_id).
+* If it doesn't, the function will detect a context violation and an exception will be thrown.
+* This function will refresh the following materialized views concurrently:
+*   - module_trees
+*   - module_details
+* @param in_context_id the assumed topic context for this operation.
+* @param in_module_id the root of the subtree to delete.
+* @returns a table of deleted ids.
+**/
 drop function remove_module_tree(UUID,UUID);
 CREATE OR REPLACE FUNCTION remove_module_tree(in_context_id UUID, in_module_id UUID) 
-RETURNS void AS $$
+RETURNS TABLE(id UUID) AS $$
 DECLARE 
 topic_id UUID;
 BEGIN
   SET CONSTRAINTS ALL DEFERRED;
   PERFORM check_topic_context(in_context_id,in_module_id);
-  if NOT exists(select 1 from modules m where m.id = in_module_id AND m.topic_id = in_context_id) then
-    RAISE EXCEPTION 'Operation out of scope.';
-  end if;
-  delete from modules where  id in (select id from (select id, unnest (paths) as paths from module_trees )t where paths like '%'||in_module_id||'%');
+  RETURN QUERY delete from modules where  id in (select id from (select id, unnest (paths) as paths from module_trees )t where paths like '%'||in_module_id||'%') RETURNING id;
   REFRESH MATERIALIZED VIEW CONCURRENTLY module_trees;
   REFRESH MATERIALIZED VIEW CONCURRENTLY module_details;
 END;
@@ -226,8 +234,6 @@ insert into module_parents(child_id,parent_id) select id,a from unnest(parent_id
 REFRESH MATERIALIZED VIEW CONCURRENTLY module_trees;
 REFRESH MATERIALIZED VIEW CONCURRENTLY module_details;
 $$ LANGUAGE sql;
-
-
 
 drop function increment_version(UUID,varchar);
 CREATE OR REPLACE FUNCTION increment_version(in_id UUID, version_table varchar) 
