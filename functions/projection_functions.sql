@@ -37,7 +37,7 @@ BEGIN
   if lower_bound = -1  AND upper_bound = -1 then
     select json_agg(o1) into result
     from(
-      select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id
+      select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id,m.children
       from module_trees m 
       where m.topic_id = in_topic_id 
     ) o1;
@@ -47,7 +47,7 @@ BEGIN
   if lower_bound = -1 then 
     select json_agg(o1) into result
     from(
-      select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id
+      select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id,m.children
       from module_trees m 
       where m.topic_id = in_topic_id AND m.level <= upper_bound 
     ) o1;
@@ -58,7 +58,7 @@ BEGIN
   if upper_bound = -1 then
     select json_agg(o1) into result
     from(
-      select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id
+      select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id,m.children
       from module_trees m 
       where m.topic_id = in_topic_id AND m.level >= lower_bound
     ) o1;
@@ -67,7 +67,7 @@ BEGIN
 
   select json_agg(o1) into result
   from(
-    select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id
+    select m.id,m.level,m.paths, m.description,m.topic_id,m.video_id,m.script_id,m.children
     from module_trees m 
     where m.topic_id = in_topic_id AND m.level <= upper_bound AND m.level >= lower_bound
   ) o1;
