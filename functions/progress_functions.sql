@@ -20,7 +20,7 @@ BEGIN
   inner join topics t on t.id = m.topic_id
   where e.id = in_exercise_id; 
   if  beaten_exercises > 2 then
-    insert into module_progress_histories(user_id,module_id,amount,state,time) values(in_user_id,exercise_module_id,300,2,no());
+    insert into module_progress_histories(user_id,module_id,amount,state,time) values(in_user_id,exercise_module_id,300,2,now());
     sum_points = sum_points + 300;
   end if;
   update topic_balances set amount = amount + sum_points where user_id = in_user_id AND topic_id = exercise_topic_id;
@@ -40,26 +40,33 @@ exercise_topic_id UUID;
 sum_points int;
 BEGIN
   insert into task_completed_histories(user_id,task_id,time) values(in_user_id,in_task_id,now());
-  select exercise_id into var_exercise_id from tasks where task_id = in_task_id;
+  select exercise_id into var_exercise_id from tasks where id = in_task_id;
   select max(position) into existend_tasks from tasks where exercise_id = var_exercise_id group by exercise_id;
   select count(tch.task_id) into beaten_tasks from tasks t inner join task_completed_histories tch on t.id = tch.task_id where tch.user_id = in_user_id AND t.exercise_id = var_exercise_id;
-
-  if beaten_tasks == existend_tasks then
+  RAISE LOG 'number of tasks is %, beaten tasks is %', existend_tasks, beaten_tasks;
+  if beaten_tasks < existend_tasks then
     return;
   end if;
+  RAISE LOG 'all tasks beaten. completing exercise.';
   --if we are here, all tasks of the exercise have been beaten
   insert into exercise_progress_histories(user_id,exercise_id,amount,state,time) values(in_user_id,var_exercise_id,100,2,now());
   sum_points = 100;
-  select count(*) into beaten_exercises from exercise_progress_histories where user_id = in_user_id AND exercise_id = in_exercise_id AND state = 2;
 
   select m.id,t.id
   into exercise_module_id ,exercise_topic_id 
   from exercises e
   inner join modules m on e.module_id = m.id
   inner join topics t on t.id = m.topic_id
-  where e.id = in_exercise_id; 
+  where e.id = var_exercise_id; 
+
+  select count(*) into beaten_exercises 
+  from exercise_progress_histories eph inner join exercises e on e.id = eph.exercise_id 
+  where user_id = in_user_id AND e.module_id = exercise_module_id AND state = 2;
+
+  RAISE LOG 'currently % exercises beaten.',beaten_exercises;
   if  beaten_exercises > 2 then
-    insert into module_progress_histories(user_id,module_id,amount,state,time) values(in_user_id,exercise_module_id,300,2,no());
+    RAISE LOG 'beaten more than 2 exercises. completing module.';
+    insert into module_progress_histories(user_id,module_id,amount,state,time) values(in_user_id,exercise_module_id,300,2,now());
     sum_points = sum_points + 300;
   end if;
   update topic_balances set amount = amount + sum_points where user_id = in_user_id AND topic_id = exercise_topic_id;
@@ -76,10 +83,11 @@ user_balance int;
 hint_topic_id UUID;
 BEGIN
   if exists(select 1 from hint_purchase_histories where user_id = in_user_id AND hint_id = in_hint_id) then
+    -- hint already purchased
     return 2;
   end if;
-
   if not exists(select 1 from hints where id = in_hint_id) then
+    -- hint does not exist
     return 3;
   end if;
   select tb.amount, h.cost ,tb.topic_id into user_balance , hint_cost , hint_topic_id 
@@ -91,6 +99,7 @@ BEGIN
   where tb.user_id = in_user_id  AND h.id = in_hint_id;
 
   if user_balance < hint_cost then
+    -- balance not sufficient
     return 1;
   end if;
 

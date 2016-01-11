@@ -133,8 +133,12 @@ insert into hints (id,task_id,position,content,cost) values (uuid_generate_v3(uu
 
 
 insert into exercises values (uuid_generate_v3(uuid_ns_url(),'exercise_2'),uuid_generate_v3(uuid_ns_url(),'module_1'),'java',1);
+
+insert into tasks (id,exercise_id,position,content) values (uuid_generate_v3(uuid_ns_url(),'task_4'),uuid_generate_v3(uuid_ns_url(),'exercise_2'),1,'do something awesome');
+
 insert into exercises values (uuid_generate_v3(uuid_ns_url(),'exercise_3'),uuid_generate_v3(uuid_ns_url(),'module_1'),'java',1);
 
+insert into tasks (id,exercise_id,position,content) values (uuid_generate_v3(uuid_ns_url(),'task_5'),uuid_generate_v3(uuid_ns_url(),'exercise_3'),1,'do something more awesome');
 
 insert into exercises values (uuid_generate_v3(uuid_ns_url(),'exercise_4'),uuid_generate_v3(uuid_ns_url(),'module_2'),'java',1);
 insert into exercises values (uuid_generate_v3(uuid_ns_url(),'exercise_5'),uuid_generate_v3(uuid_ns_url(),'module_2'),'java',1);

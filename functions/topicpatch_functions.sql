@@ -48,7 +48,7 @@ $$ LANGUAGE sql;
 drop function add_assistant(UUID,UUID);
 CREATE OR REPLACE FUNCTION add_assistant(in_topic_id UUID,in_user_id UUID) 
 RETURNS void AS $$
-insert into topic_authority(topic_id,user_id,kind) values(in_topic_id,in_topic_id,'ASSISTANT');
+insert into topic_authority(topic_id,user_id,kind) values(in_topic_id,in_user_id,'ASSISTANT');
 $$ LANGUAGE sql;
 
 
@@ -229,8 +229,20 @@ $$ LANGUAGE plpgsql;
 drop function add_module(UUID,UUID,text,UUID,UUID,UUID[]);
 CREATE OR REPLACE FUNCTION add_module(id UUID, topic_id UUID, description text,  video_id UUID, script_id UUID,parent_ids VARIADIC UUID[]) 
 RETURNS void AS $$
+BEGIN
 insert into modules (id,topic_id,description,video_id,script_id,version) values(id,topic_id,description,video_id,script_id,1);
-insert into module_parents(child_id,parent_id) select id,a from unnest(parent_ids)a;
+if array_length(parent_ids, 1) > 0 then
+  insert into module_parents(child_id,parent_id) select id,a from unnest(parent_ids)a;
+end if;
+REFRESH MATERIALIZED VIEW CONCURRENTLY module_trees;
+REFRESH MATERIALIZED VIEW CONCURRENTLY module_details;
+END;
+$$ LANGUAGE plpgsql;
+
+drop function add_module(UUID,UUID,text,UUID,UUID);
+CREATE OR REPLACE FUNCTION add_module(id UUID, topic_id UUID, description text,  video_id UUID, script_id UUID) 
+RETURNS void AS $$
+insert into modules (id,topic_id,description,video_id,script_id,version) values(id,topic_id,description,video_id,script_id,1);
 REFRESH MATERIALIZED VIEW CONCURRENTLY module_trees;
 REFRESH MATERIALIZED VIEW CONCURRENTLY module_details;
 $$ LANGUAGE sql;

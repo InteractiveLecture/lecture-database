@@ -10,6 +10,9 @@ BEGIN
   var_id = get_task_id(in_exercise_id,in_task_position);
   SET CONSTRAINTS ALL DEFERRED;
   select max(position) into max_position from hints where task_id = var_id;
+  if max_position is null then
+    max_position = 0;
+  end if;
   if max_position > in_position then
     update hints set position = position+1 where task_id = var_id AND position >= in_position;
     insert into hints(id,task_id,position,content,cost) values(in_id,var_id,in_position,in_content,in_cost);
@@ -28,9 +31,10 @@ DECLARE
 var_id UUID;
 BEGIN
   var_id = get_task_id(in_exercise_id,in_task_position);
+  RAISE LOG 'id is %',var_id; 
   SET CONSTRAINTS ALL DEFERRED;
   delete from hints where task_id = var_id AND position = in_position;
-  update hints set position = position-1 where task_id = var_id AND position >= in_position;
+  update hints set position = position-1 where task_id = var_id AND position > in_position;
   REFRESH MATERIALIZED VIEW CONCURRENTLY module_details;
 END;
 $$ LANGUAGE plpgsql;
@@ -130,6 +134,9 @@ max_position int;
 BEGIN
   SET CONSTRAINTS ALL DEFERRED;
   select max(position) into max_position from tasks where exercise_id = in_exercise_id;
+  if max_position is null then
+    max_position = 0;
+  end if;
   if max_position > in_position then
     update tasks set position = position+1 where exercise_id = in_exercise_id AND position >= in_position;
     insert into tasks(id,exercise_id,position,content) values(in_id,in_exercise_id,in_position,in_content);
