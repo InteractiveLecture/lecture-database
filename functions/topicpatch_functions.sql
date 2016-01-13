@@ -79,6 +79,7 @@ root_siblings UUID[];
 old_root_id UUID;
 new_root_id UUID;
 new_parent_id UUID;
+child UUID;
 BEGIN
   SET CONSTRAINTS ALL DEFERRED;
   PERFORM check_topic_context(in_context_id,in_module_id);
@@ -89,7 +90,14 @@ BEGIN
     PERFORM shift_tree(in_module_id);
     insert into module_parents select in_module_id, a from unnest(in_new_parent_ids) a;
   else
-    update module_parents set parent_id = old_parent where parent_id = in_module_id;
+    foreach  child in ARRAY (select children from module_trees where id = in_module_id) loop
+    if (select count(*) from module_parents where child_id = child)  > 1 then 
+    --if there is more than one parent, just remove the moving parent.
+      delete from module_parents where child_id = child AND parent_id = in_module_id;
+    else
+      update module_parents set parent_id = old_parent where parent_id = in_module_id AND child_id = child;
+    end if;
+    end loop;
     delete from module_parents where child_id = in_module_id;
     if array_length(in_new_parent_ids,1) = 0 then -- the moving module should be the new root.
       select module_trees.id into old_root_id 

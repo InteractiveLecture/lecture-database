@@ -196,7 +196,7 @@ $$ LANGUAGE sql;
 
 
 DROP FUNCTION IF EXISTS get_exercise_base(UUID,int,int);
-CREATE OR REPLACE FUNCTION get_exercise_base(in_user_id UUID,in_limit int,in_skip int)  returns table (user_id UUID, exercise_id UUID, amount smallint, event_time timestamp, description varchar, module_id UUID)AS $$
+CREATE OR REPLACE FUNCTION get_exercise_base(in_user_id UUID,in_limit int,in_skip int)  returns table (user_id UUID, exercise_id UUID, amount smallint, event_time timestamp, event_type varchar, module_id UUID)AS $$
 BEGIN
   if in_limit = -1 AND in_skip = -1 then
     return query

@@ -41,37 +41,24 @@ $$ LANGUAGE plpgsql;
 
 --TODO unit test
 drop function move_hint(UUID, int,int,int,int);
-CREATE OR REPLACE FUNCTION move_hint(in_exercise_id UUID,in_old_task_position int,in_old_hint_position int, in_new_task_position int,in_new_hint_position int) 
+CREATE OR REPLACE FUNCTION move_hint(in_exercise_id UUID,in_task_position int,in_old_hint_position int, in_new_hint_position int) 
 RETURNS void AS $$
 DECLARE
-var_id UUID;
-old_task_id UUID;
-new_task_id UUID;
+var_hint_id UUID;
+var_task_id UUID;
 max_position int;
 BEGIN
-  new_task_id = get_task_id(in_exercise_id,in_new_task_position);
-  old_task_id = get_task_id(in_exercise_id,in_old_task_position);
-  select h.id into var_id from hints h inner join tasks t on h.task_id = t.id where h.position = in_old_hint_position AND t.position = in_old_task_position;
-    if var_id is null then 
-      RAISE EXCEPTION 'unknown hint position';
-    end if;
-  SET CONSTRAINTS ALL DEFERRED;
-  if in_new_task_position != in_old_task_position then
-    select max(position) into max_position from hints where task_id = new_task_id;
-    if in_new_hint_position > max_position then
-      update hints set position = max_position + 1, task_id = new_task_id where id = var_id;
-    else 
-      update hints set position = position + 1 where task_id = new_task_id AND position  >= in_new_hint_position; 
-      update hints set position = in_new_hint_position, task_id = new_task_id where id = var_id;
-    end if;
-  else 
-    if in_new_hint_position > in_old_hint_position then
-      update hints set position = position - 1 where task_id = old_task_id AND position  > in_old_hint_position AND position <= in_new_hint_position ; 
-    else
-      update hints set position = position + 1 where task_id = old_task_id AND position < in_old_hint_position AND position >= in_new_hint_position ; 
-    end if;
-    update hints set position = in_new_hint_position where id = var_id;
+  select h.id , t.id into var_hint_id, var_task_id from hints h inner join tasks t on h.task_id = t.id where h.position = in_old_hint_position AND t.position = in_task_position AND t.exercise_id = in_exercise_id;
+  if var_hint_id is null then 
+    RAISE EXCEPTION 'unknown hint position';
   end if;
+  SET CONSTRAINTS ALL DEFERRED;
+  if in_new_hint_position > in_old_hint_position then
+    update hints set position = position - 1 where task_id = var_task_id AND position  > in_old_hint_position AND position <= in_new_hint_position; 
+  else
+    update hints set position = position + 1 where task_id = var_task_id AND position < in_old_hint_position AND position >= in_new_hint_position; 
+  end if;
+  update hints set position = in_new_hint_position where id = var_hint_id;
   REFRESH MATERIALIZED VIEW CONCURRENTLY module_details;
 END;
 $$ LANGUAGE plpgsql;

@@ -110,5 +110,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-
+drop function start_exercise(UUID,UUID);
+CREATE OR REPLACE FUNCTION start_exercise(in_exercise_id UUID, in_user_id UUID)
+RETURNS void AS $$
+DECLARE
+var_module_id UUID;
+BEGIN
+  insert into exercise_progress_histories(user_id,exercise_id,amount,time,state) values(in_user_id,in_exercise_id, 0 , now(),1);
+  select e.module_id into var_module_id from exercises e where e.id = in_exercise_id;
+  if not exists (select 1 from module_progress_histories where module_id = var_module_id) then
+    insert into module_progress_histories(user_id, module_id, amount, time, state) values (in_user_id, var_module_id,0,now(),1);
+  end if;
+END;
+$$ LANGUAGE plpgsql;
