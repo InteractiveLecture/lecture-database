@@ -64,8 +64,8 @@ BEGIN
   where user_id = in_user_id AND e.module_id = exercise_module_id AND state = 2;
 
   RAISE LOG 'currently % exercises beaten.',beaten_exercises;
-  if  beaten_exercises > 2 then
-    RAISE LOG 'beaten more than 2 exercises. completing module.';
+  if  beaten_exercises >= 2 AND not exists (select 1 from module_progress_histories where user_id = in_user_id AND module_id = exercise_module_id AND state = 2)then
+    RAISE LOG 'beaten 2 exercises and module not beaten yet. completing module.';
     insert into module_progress_histories(user_id,module_id,amount,state,time) values(in_user_id,exercise_module_id,300,2,now());
     sum_points = sum_points + 300;
   end if;

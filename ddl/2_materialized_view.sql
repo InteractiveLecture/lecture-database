@@ -25,6 +25,7 @@ select coalesce(json_agg(o1),'[]') from (
   select ta.id,ta.content, ta.position,(select coalesce(array_agg(h.id order by h.position),'{}') from hints h where h.task_id = ta.id) as hints
   from tasks ta
   where ta.exercise_id = in_exercise_id
+  ORDER BY ta.position
 ) o1;
 $$ LANGUAGE sql;
 
